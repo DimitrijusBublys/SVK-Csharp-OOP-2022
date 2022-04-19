@@ -9,35 +9,44 @@ namespace Encrypt
 {
     internal class EncryptPassword
     {
-        public string originalPw;
-        public int lengthPw;
-        private static byte[] IV = { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
-    
-        public EncryptPassword(string password, int passwordLength){
-            originalPw = password;
-            lengthPw = passwordLength;
-        }
-
-        public string Encryption(string placeholder, string originalPw, byte[] IV)
+        public static string Encrypted(string key, string password)
         {
-            byte[] Key = Encoding.UTF8.GetBytes(originalPw);
+            byte[] IV = new byte[16];
             AesManaged aes = new AesManaged();
-            aes.Key = Key;
+
+            aes.Key = Encoding.UTF8.GetBytes(key);
             aes.IV = IV;
 
             MemoryStream memoryStream = new MemoryStream();
             CryptoStream cryptoStream = new CryptoStream(memoryStream, aes.CreateEncryptor(), CryptoStreamMode.Write);
 
-            byte[] InputBytes = Encoding.UTF8.GetBytes(placeholder);
-            cryptoStream.Write(InputBytes,0, InputBytes.Length);
+            byte[] InputBytes = Encoding.UTF8.GetBytes(password);
+            cryptoStream.Write(InputBytes, 0, InputBytes.Length);
             cryptoStream.FlushFinalBlock();
 
             byte[] Encrypted = memoryStream.ToArray();
 
-            Console.WriteLine(Encrypted);
 
             return Convert.ToBase64String(Encrypted);
-            
+
+        }
+
+        public static string Decrypted(string key, string encrypted)
+        {
+            byte[] IV = new byte[16];
+            byte[] buffer = Convert.FromBase64String(encrypted);
+
+            AesManaged aes = new AesManaged();
+
+            aes.Key = Encoding.UTF8.GetBytes(key);
+            aes.IV = IV;
+
+            ICryptoTransform decryptor = aes.CreateDecryptor(aes.Key, aes.IV);
+            MemoryStream memoryStream = new MemoryStream(buffer);
+            CryptoStream cryptoStream = new CryptoStream((Stream)memoryStream, decryptor, CryptoStreamMode.Read);
+            StreamReader streamReader = new StreamReader((Stream)cryptoStream);
+
+            return streamReader.ReadToEnd();
         }
     }
 }
